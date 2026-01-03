@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    restart: always
+    expose:
+      - "5000"
+    container_name: apps-kinofolio-web  # Caddyが見つけやすいように名前をつける
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://user:password@db:5432/portfolio_db
+      - SECRET_KEY=change_this_to_something_secure
+      - SESSION_COOKIE_SECURE=False
+      - SESSION_COOKIE_HTTPONLY=True
+      - SESSION_COOKIE_SAMESITE=Lax
+    depends_on:
+      - db
+    networks:
+      - default
+      - app-network  # 管理入室とつながる回線
+
+  db:
+    image: postgres:17
+    restart: always
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=portfolio_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - default
+
+volumes:
+  postgres_data:
+    external: true
+    name: myapp_postgres_data
+
+networks:
+  app-network:
+    external: true
