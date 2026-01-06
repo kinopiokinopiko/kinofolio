@@ -2,16 +2,18 @@
 <div class="header-bar">
     <!-- 左側: ログアウト、更新 -->
     <div class="header-left">
-        <a href="{{ url_for('auth.logout') }}" class="icon-btn" title="ログアウト">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- ログアウト -->
+        <a href="{{ url_for('auth.logout') }}" class="modern-btn tooltip-container" data-tooltip="ログアウト">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                 <polyline points="16 17 21 12 16 7"></polyline>
                 <line x1="21" y1="12" x2="9" y2="12"></line>
             </svg>
         </a>
         
+        <!-- 更新ボタン -->
         <form method="post" action="{{ url_for('assets.update_all_prices') }}" style="margin: 0;">
-            <button type="submit" class="icon-btn" onclick="return confirm('全ての価格を手動で更新しますか?時間がかかる場合があります。')" title="価格更新">
+            <button type="submit" class="modern-btn tooltip-container" data-tooltip="価格情報を更新" onclick="return confirm('全ての価格を手動で更新しますか?時間がかかる場合があります。')">
                 <svg class="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="23 4 23 10 17 10"></polyline>
                     <polyline points="1 20 1 14 7 14"></polyline>
@@ -22,42 +24,43 @@
     </div>
 
     <!-- 中央: タイトル -->
-    <div class="header-title">ようこそ{{ user_name }}さん</div>
+    <div class="header-title">ようこそ {{ user_name }} さん</div>
     
     <!-- 右側: プライバシーモード、ナイトモード -->
     <div class="header-right">
         <!-- プライバシーモードボタン -->
-        <button id="privacy-toggle" class="icon-btn" title="金額を隠す">
+        <button id="privacy-toggle" class="modern-btn tooltip-container" data-tooltip="金額を隠す">
             <!-- デフォルト: 目 (表示中) -->
-            <svg id="eye-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
             </svg>
             <!-- 非表示時: 斜線入りの目 (隠し中) -->
-            <svg id="eye-off-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+            <svg id="eye-off-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
                 <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
                 <line x1="1" y1="1" x2="23" y2="23"></line>
             </svg>
         </button>
         
-        <!-- ナイトモードボタンのプレースホルダー -->
+        <!-- ナイトモードボタンのプレースホルダー (base.htmlのスクリプトがここにボタンを挿入) -->
         <div id="theme-toggle-container"></div>
     </div>
 </div>
 
 <style>
-    /* ヘッダーレイアウト調整 */
     .header-bar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 8px;
+        margin-bottom: 24px;
+        padding: 12px 0;
+        gap: 12px;
     }
     
     .header-left, .header-right {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 16px; /* ボタン間隔を少し広げる */
         flex: 1;
     }
     
@@ -66,31 +69,32 @@
     }
     
     .header-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-color);
         flex: 2;
+        text-align: center;
+        letter-spacing: -0.5px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
     
-    /* プライバシーモード時のバッジスタイル（強制グレー） */
-    .privacy-gray-badge {
-        background-color: #6c757d !important;
-        border-color: #6c757d !important;
-        color: #ffffff !important;
+    /* 更新アイコンの回転アニメーション */
+    button:active .refresh-icon {
+        animation: rotate 0.6s ease-in-out;
     }
+    @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-    /* プライバシーモード時のテキストスタイル（強制グレー） */
-    .privacy-gray-text {
-        color: var(--text-secondary) !important;
-    }
+    /* プライバシーモード時のスタイル上書き */
+    .privacy-gray-badge { background-color: #6c757d !important; border-color: #6c757d !important; color: #ffffff !important; }
+    .privacy-gray-text { color: var(--text-secondary) !important; }
     
-    @media (max-width: 400px) {
-        .header-title {
-            font-size: 16px;
-        }
-        .icon-btn {
-            padding: 6px;
-        }
+    @media (max-width: 576px) {
+        .header-title { font-size: 16px; }
+        .header-left, .header-right { gap: 8px; }
+        /* スマホでボタンが大きすぎる場合は少し小さく */
+        .modern-btn { width: 40px; height: 40px; }
     }
 </style>
 
@@ -100,88 +104,63 @@ document.addEventListener('DOMContentLoaded', function() {
     const eyeIcon = document.getElementById('eye-icon');
     const eyeOffIcon = document.getElementById('eye-off-icon');
     
-    // ローカルストレージから状態を復元（なければfalse）
     let isHidden = localStorage.getItem('privacy_mode') === 'true';
 
-    // 金額が表示されている要素のセレクタ
-    const amountSelectors = [
-        '.total-amount',      // 総資産
-        '.profit-amount',     // 損益
-        '.day-change-amount', // 前日比
-        '.card-amount-new',   // カード内の金額
-        '.detail-amount',     // カード詳細の金額
-        '.profit-val'         // 詳細画面の損益
-    ];
+    // 対象要素セレクタ
+    const amountSelectors = ['.total-amount', '.profit-amount', '.day-change-amount', '.card-amount-new', '.detail-amount', '.profit-val', '.summary-value', '.summary-profit'];
+    const badgeSelectors = ['.profit-badge', '.day-change-badge', '.detail-badge', '.profit-pct', '.summary-profit-percentage'];
 
-    // パーセンテージバッジのセレクタ
-    const badgeSelectors = [
-        '.profit-badge',      // 総資産の損益%
-        '.day-change-badge',  // 総資産の前日比%
-        '.detail-badge',      // カード詳細の%
-        '.profit-pct'         // 詳細画面の%
-    ];
-
-    // 初期状態の適用
-    if (isHidden) {
-        togglePrivacy(true);
-    }
+    // 初期実行
+    if (isHidden) togglePrivacy(true);
 
     privacyBtn.addEventListener('click', function() {
         isHidden = !isHidden;
-        localStorage.setItem('privacy_mode', isHidden); // 状態を保存
+        localStorage.setItem('privacy_mode', isHidden);
         togglePrivacy(isHidden);
     });
 
     function togglePrivacy(hide) {
-        // 1. アイコン切り替え
+        // アイコンとツールチップの切り替え
         if (hide) {
             eyeIcon.style.display = 'none';
             eyeOffIcon.style.display = 'block';
-            privacyBtn.setAttribute('title', '情報を表示');
+            privacyBtn.setAttribute('data-tooltip', '情報を表示'); // data-tooltipを書き換え
         } else {
             eyeIcon.style.display = 'block';
             eyeOffIcon.style.display = 'none';
-            privacyBtn.setAttribute('title', '情報を隠す');
+            privacyBtn.setAttribute('data-tooltip', '情報を隠す'); // data-tooltipを書き換え
         }
 
-        // 2. 金額の書き換え (*****)
+        // 金額の隠蔽
         const targets = document.querySelectorAll(amountSelectors.join(','));
         targets.forEach(el => {
             if (hide) {
                 if (!el.dataset.originalValue) el.dataset.originalValue = el.innerText;
                 el.innerText = '*****';
-                // クラスを追加してグレーにする
                 el.classList.add('privacy-gray-text');
             } else {
                 if (el.dataset.originalValue) el.innerText = el.dataset.originalValue;
-                // クラスを削除して元の色に戻す
                 el.classList.remove('privacy-gray-text');
             }
         });
 
-        // 3. バッジの書き換え (***%) と色変更
+        // バッジの隠蔽
         const badges = document.querySelectorAll(badgeSelectors.join(','));
         badges.forEach(el => {
             if (hide) {
-                // 値を隠す
                 if (!el.dataset.originalValue) el.dataset.originalValue = el.innerText;
                 el.innerText = '***%';
-                
-                // 色をグレーにするクラスを追加
                 el.classList.add('privacy-gray-badge');
             } else {
-                // 値を戻す
                 if (el.dataset.originalValue) el.innerText = el.dataset.originalValue;
-                
-                // グレーにするクラスを削除（元の色に戻る）
                 el.classList.remove('privacy-gray-badge');
             }
         });
-
-        // 4. チャートの非表示
+        
+        // チャートの非表示
         const chartWrapper = document.querySelector('.tab-content-wrapper');
         if (chartWrapper) {
-            chartWrapper.style.transition = 'opacity 0.2s ease, visibility 0.2s ease'; // スムーズな遷移
+            chartWrapper.style.transition = 'opacity 0.2s ease, visibility 0.2s ease';
             if (hide) {
                 chartWrapper.style.opacity = '0';
                 chartWrapper.style.visibility = 'hidden';

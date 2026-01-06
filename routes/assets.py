@@ -91,7 +91,7 @@ def manage_assets(asset_type):
                                  assets=assets_list,
                                  user_name=user_name,
                                  crypto_symbols=constants.CRYPTO_SYMBOLS,
-                                 precious_metal_symbols=constants.PRECIOUS_METAL_SYMBOLS, # 追加
+                                 precious_metal_symbols=constants.PRECIOUS_METAL_SYMBOLS,
                                  investment_trust_symbols=constants.INVESTMENT_TRUST_SYMBOLS,
                                  insurance_types=constants.INSURANCE_TYPES)
     
@@ -150,15 +150,17 @@ def add_asset():
             flash('入力内容を確認してください', 'error')
             return redirect(url_for('assets.manage_assets', asset_type=asset_type))
         
-        # 新しいアイテムは最後尾に追加するため、現在の最大display_orderを取得
+        # 【修正】RealDictCursor対応: エイリアスを使って辞書キーでアクセス
         with db_manager.get_db() as conn:
             c = conn.cursor()
             if db_manager.use_postgres:
-                c.execute('SELECT MAX(display_order) FROM assets WHERE user_id = %s AND asset_type = %s', (user_id, asset_type))
+                c.execute('SELECT MAX(display_order) as max_order FROM assets WHERE user_id = %s AND asset_type = %s', (user_id, asset_type))
             else:
-                c.execute('SELECT MAX(display_order) FROM assets WHERE user_id = ? AND asset_type = ?', (user_id, asset_type))
-            max_order = c.fetchone()[0]
-            new_order = (max_order or 0) + 1
+                c.execute('SELECT MAX(display_order) as max_order FROM assets WHERE user_id = ? AND asset_type = ?', (user_id, asset_type))
+            
+            row = c.fetchone()
+            current_max = row['max_order'] if row and row['max_order'] is not None else 0
+            new_order = current_max + 1
 
         # 保険の場合
         if asset_type == 'insurance':

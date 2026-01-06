@@ -4,11 +4,7 @@
 
 {% block extra_styles %}
 <style>
-    /* ヘッダー削除、サマリーカードをヘッダー兼用にする */
-    
-    /* サマリーカード (兼ヘッダー) 
-       base.htmlのスクリプトが .header を探してテーマ切り替えボタンを配置するため class="header" を付与
-    */
+    /* サマリーカード (兼ヘッダー) */
     .summary-card.header {
         background: var(--card-bg);
         border-radius: 16px;
@@ -19,13 +15,13 @@
         border: 1px solid var(--border-color);
         position: relative; 
         margin-top: 16px;
-        display: block; /* headerクラスのデフォルトスタイルを上書き */
+        display: block;
     }
     
-    .home-icon-btn {
+    /* ヘッダー用アイコンボタン共通スタイル */
+    .header-icon-btn {
         position: absolute;
         top: 20px;
-        left: 20px;
         width: 40px;
         height: 40px;
         border-radius: 50%;
@@ -35,16 +31,79 @@
         align-items: center;
         justify-content: center;
         border: 1px solid var(--border-color);
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* バネのような動き */
         cursor: pointer;
         text-decoration: none;
         z-index: 10;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
     
-    .home-icon-btn:hover {
-        background: var(--hover-bg);
-        color: var(--text-color);
-        transform: scale(1.05);
+    /* ホバー時の浮き上がりエフェクト */
+    .header-icon-btn:hover {
+        background: var(--card-bg);
+        color: var(--accent-color);
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        border-color: var(--accent-color);
+    }
+
+    /* ホームボタン位置 */
+    .home-btn {
+        left: 20px;
+    }
+
+    /* 並び替えボタン位置 */
+    .sort-btn {
+        left: 72px; /* ホームボタン(40px) + 間隔 */
+    }
+
+    /* 並び替えボタンのアクティブ状態 */
+    .header-icon-btn.active {
+        background: var(--accent-color);
+        color: white;
+        border-color: var(--accent-color);
+        box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+    }
+
+    /* ツールチップ（文字が浮き出る仕組み） */
+    .header-icon-btn .tooltip {
+        visibility: hidden;
+        background-color: var(--text-color);
+        color: var(--card-bg);
+        text-align: center;
+        border-radius: 6px;
+        padding: 6px 10px;
+        position: absolute;
+        z-index: 1;
+        top: 115%; /* ボタンの下に表示 */
+        left: 50%;
+        transform: translateX(-50%) translateY(-10px);
+        opacity: 0;
+        transition: opacity 0.3s, transform 0.3s;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        pointer-events: none;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    /* ツールチップの矢印 */
+    .header-icon-btn .tooltip::after {
+        content: "";
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: transparent transparent var(--text-color) transparent;
+    }
+
+    /* ホバー時にツールチップを表示 */
+    .header-icon-btn:hover .tooltip {
+        visibility: visible;
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
     }
     
     .summary-title {
@@ -90,11 +149,45 @@
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         position: relative;
         overflow: hidden;
-        cursor: grab;
     }
     
-    .asset-card-new:active {
+    /* 並び替えモード時のスタイル */
+    .asset-card-grid.sorting-mode .asset-card-new {
+        border-style: dashed;
+        border-color: var(--accent-color);
+        cursor: grab;
+    }
+
+    .asset-card-grid.sorting-mode .asset-card-new:active {
         cursor: grabbing;
+    }
+
+    /* ドラッグハンドル */
+    .drag-handle {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 30px;
+        background: rgba(0,0,0,0.03);
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        border-right: 1px solid var(--border-color);
+        color: var(--text-secondary);
+    }
+
+    .asset-card-grid.sorting-mode .drag-handle {
+        display: flex;
+    }
+
+    .asset-card-grid.sorting-mode .asset-card-new {
+        padding-left: 50px;
+    }
+
+    .asset-card-grid.sorting-mode .action-icons-vertical {
+        display: none;
     }
     
     .asset-card-new:hover {
@@ -102,7 +195,7 @@
         box-shadow: 0 8px 20px var(--shadow-color);
     }
 
-    /* カードヘッダー構造 (左右配置) */
+    /* カードヘッダー構造 */
     .card-row-header {
         display: flex;
         justify-content: space-between;
@@ -140,11 +233,10 @@
         display: inline-block;
     }
 
-    /* 右側エリア: 価格とアイコンを横並び(Flex)にするが、アイコン自体は縦並び */
     .header-right-group {
         display: flex;
-        align-items: flex-start; /* 上揃え */
-        gap: 12px; /* 価格とアイコンの間隔 */
+        align-items: flex-start;
+        gap: 12px;
         flex-shrink: 0;
     }
 
@@ -166,7 +258,6 @@
         letter-spacing: -0.5px;
     }
 
-    /* 縦並びアイコンコンテナ */
     .action-icons-vertical {
         display: flex;
         flex-direction: column;
@@ -204,7 +295,6 @@
         height: 16px;
     }
 
-    /* カードボディ: 詳細グリッド */
     .card-grid-details {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -237,7 +327,6 @@
         font-size: 17px;
     }
 
-    /* 損益専用スタイル */
     .profit-box {
         grid-column: span 2;
         background: var(--bg-color);
@@ -263,7 +352,6 @@
         margin-left: 6px;
     }
 
-    /* 追加ボタン (FAB) */
     .add-button {
         position: fixed;
         bottom: 24px;
@@ -292,7 +380,6 @@
         transform: scale(1.05);
     }
     
-    /* モーダル */
     .form-overlay {
         display: none;
         position: fixed;
@@ -346,7 +433,6 @@
     .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
     .empty-state-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.3; }
 
-    /* レスポンシブ対応 */
     @media (min-width: 768px) {
         .asset-card-grid {
             display: grid;
@@ -362,8 +448,6 @@
 {% endblock %}
 
 {% block content %}
-<!-- ヘッダー削除済 -->
-
 <!-- 時価総額サマリー (兼ヘッダー機能) -->
 {% if assets %}
     {% set total_value = namespace(amount=0) %}
@@ -386,15 +470,30 @@
     {% set total_profit = total_value.amount - total_cost.amount %}
     {% set total_profit_rate = (total_profit / total_cost.amount * 100) if total_cost.amount > 0 else 0 %}
     
-    <!-- classにheaderを追加して、base.htmlのテーマ切り替えボタン挿入ロジックを適用させる -->
     <div class="summary-card header">
         <!-- ホームアイコン (左上) -->
-        <a href="{{ url_for('dashboard.dashboard') }}" class="home-icon-btn" title="ダッシュボードへ戻る">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <a href="{{ url_for('dashboard.dashboard') }}" class="header-icon-btn home-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                 <polyline points="9 22 9 12 15 12 15 22"></polyline>
             </svg>
+            <span class="tooltip">戻る</span>
         </a>
+
+        <!-- 並び替えボタン (アイコンのみ) -->
+        <button id="toggle-sort-btn" class="header-icon-btn sort-btn" onclick="toggleSortMode()">
+            <svg id="sort-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <polyline points="19 12 12 19 5 12"></polyline>
+            </svg>
+            <!-- 完了アイコン（最初は非表示） -->
+            <svg id="check-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            
+            <!-- 浮き出る文字 -->
+            <span id="sort-tooltip" class="tooltip">並び替え</span>
+        </button>
 
         <div class="summary-title">{{ info.title }} 時価総額</div>
         <div class="summary-value">
@@ -417,13 +516,14 @@
         {% endif %}
     </div>
 {% else %}
-    <!-- 空の状態用ヘッダー (グリッドの外に出しました) -->
+    <!-- 空の状態用ヘッダー -->
     <div class="summary-card header" style="padding: 20px;">
-        <a href="{{ url_for('dashboard.dashboard') }}" class="home-icon-btn" title="ダッシュボードへ戻る">
-             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <a href="{{ url_for('dashboard.dashboard') }}" class="header-icon-btn home-btn">
+             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                 <polyline points="9 22 9 12 15 12 15 22"></polyline>
             </svg>
+            <span class="tooltip">戻る</span>
         </a>
         <div style="margin-top: 40px; color: var(--text-secondary);">
              {{ info.title }}
@@ -442,8 +542,17 @@
         {% for asset in assets %}
             <div class="asset-card-new" data-id="{{ asset.id }}">
                 
+                <!-- ドラッグハンドル -->
+                <div class="drag-handle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </div>
+
                 {% if asset_type == 'cash' %}
-                    <!-- 現金用レイアウト (他と統一感を出す) -->
+                    <!-- 現金用レイアウト -->
                     <div class="card-row-header" style="margin-bottom: 0; border-bottom: none;">
                         <div class="asset-info">
                             <div class="asset-name">{{ asset.symbol }}</div>
@@ -461,7 +570,6 @@
                             <!-- 縦並びアイコン -->
                             <div class="action-icons-vertical">
                                 <a href="{{ url_for('assets.edit_asset', asset_id=asset['id']) }}" class="icon-action-btn" title="編集">
-                                    <!-- 編集アイコン -->
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -470,7 +578,6 @@
                                 <form method="post" action="{{ url_for('assets.delete_asset') }}" style="display: flex;">
                                     <input type="hidden" name="asset_id" value="{{ asset['id'] }}">
                                     <button type="submit" class="icon-action-btn delete" onclick="return confirm('削除しますか?')" title="削除">
-                                        <!-- 削除アイコン -->
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <polyline points="3 6 5 6 21 6"></polyline>
                                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -505,7 +612,6 @@
                                 </div>
                             </div>
 
-                            <!-- 縦並びアイコン (上:編集, 下:削除) -->
                             <div class="action-icons-vertical">
                                 <a href="{{ url_for('assets.edit_asset', asset_id=asset['id']) }}" class="icon-action-btn" title="編集">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -518,7 +624,7 @@
                                     <button type="submit" class="icon-action-btn delete" onclick="return confirm('削除しますか?')" title="削除">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <polyline points="3 6 5 6 21 6"></polyline>
-                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2"></path>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                             <line x1="10" y1="11" x2="10" y2="17"></line>
                                             <line x1="14" y1="11" x2="14" y2="17"></line>
                                         </svg>
@@ -713,12 +819,58 @@ document.getElementById('formOverlay').addEventListener('click', function(e) {
     }
 });
 
-// 並び替え機能 (SortableJS)
+// グローバル変数としてSortableインスタンスを保持
+let sortableInstance = null;
+
+function toggleSortMode() {
+    const grid = document.getElementById('sortable-grid');
+    const btn = document.getElementById('toggle-sort-btn');
+    const sortIcon = document.getElementById('sort-icon');
+    const checkIcon = document.getElementById('check-icon');
+    const tooltip = document.getElementById('sort-tooltip');
+    
+    // 現在の状態を確認
+    const isSorting = grid.classList.contains('sorting-mode');
+    
+    if (isSorting) {
+        // 並び替え終了
+        grid.classList.remove('sorting-mode');
+        btn.classList.remove('active');
+        
+        // アイコンとツールチップの切り替え
+        sortIcon.style.display = 'block';
+        checkIcon.style.display = 'none';
+        tooltip.textContent = "並び替え";
+        
+        // Sortableを無効化
+        if (sortableInstance) {
+            sortableInstance.option("disabled", true);
+        }
+    } else {
+        // 並び替え開始
+        grid.classList.add('sorting-mode');
+        btn.classList.add('active');
+        
+        // アイコンとツールチップの切り替え
+        sortIcon.style.display = 'none';
+        checkIcon.style.display = 'block';
+        tooltip.textContent = "完了";
+        
+        // Sortableを有効化
+        if (sortableInstance) {
+            sortableInstance.option("disabled", false);
+        }
+    }
+}
+
+// 並び替え機能 (SortableJS) - 初期化
 document.addEventListener('DOMContentLoaded', function() {
     var el = document.getElementById('sortable-grid');
     if (el) {
-        var sortable = Sortable.create(el, {
+        sortableInstance = Sortable.create(el, {
             animation: 150,
+            disabled: true, // デフォルトでは無効
+            handle: ".drag-handle", // ハンドルでのみドラッグ可能
             onEnd: function (evt) {
                 // 並び順をサーバーに保存
                 var itemEl = evt.item;

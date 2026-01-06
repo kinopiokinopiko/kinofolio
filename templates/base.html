@@ -2,11 +2,31 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- PWA対応: viewport-fit=cover を追加してiPhoneのノッチ領域まで表示 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
     <title>{% block title %}資産管理システム{% endblock %}</title>
+
+    <!-- ▼▼▼ ここからPWA（ホーム画面追加）用の設定 ▼▼▼ -->
+    <!-- マニフェストファイルの読み込み -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    
+    <!-- iPhone用アイコン設定 (staticフォルダ直下に置いた場合) -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
+    
+    <!-- iPhoneでアプリとして起動する設定 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Kinofolio">
+    
+    <!-- ブラウザヘッダーの色設定 -->
+    <meta name="theme-color" content="#f5f5f5" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+    <!-- ▲▲▲ PWA設定ここまで ▲▲▲ -->
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Apply theme immediately to prevent flash
+        // Apply theme immediately
         (function() {
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
@@ -14,7 +34,7 @@
     </script>
     <style>
         :root {
-            /* Light Theme Variables */
+            /* Variables (変更なし) */
             --bg-color: #f5f5f5;
             --text-color: #333333;
             --text-secondary: #666666;
@@ -34,7 +54,6 @@
         }
 
         [data-theme="dark"] {
-            /* Dark Theme Variables */
             --bg-color: #121212;
             --text-color: #e0e0e0;
             --text-secondary: #a0a0a0;
@@ -53,96 +72,143 @@
             --chip-selected-bg: #1a3c61;
         }
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
+        
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
-            margin: 0; 
-            padding: 0; 
-            background: var(--bg-color); 
-            color: var(--text-color);
+            margin: 0; padding: 0; 
+            background: var(--bg-color); color: var(--text-color);
             transition: background-color 0.3s ease, color 0.3s ease;
+            
+            /* PWA対応: 上部のセーフエリア（ノッチ）を避ける */
+            padding-top: env(safe-area-inset-top);
+            min-height: 100vh;
         }
+        
         .container { 
-            max-width: 100%; 
-            margin: 0 auto; 
-            padding: 16px;
-            padding-bottom: 80px;
+            max-width: 100%; margin: 0 auto; padding: 16px; padding-bottom: 80px;
+            /* PWA対応: 下部のセーフエリア（ホームバー）を避ける */
+            padding-bottom: calc(80px + env(safe-area-inset-bottom));
         }
         
-        /* Alert Styles */
-        .alert { 
-            padding: 24px 20px; 
-            margin: 20px auto;
-            max-width: 90%;
-            width: 100%;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            text-align: center;
-            animation: slideDown 0.3s ease-out;
-            box-shadow: 0 4px 12px var(--shadow-color);
-        }
+        /* =========================================
+           共通コンポーネント: モダンボタン & ツールチップ
+           ========================================= */
         
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes slideUpFade {
-            to { opacity: 0; transform: translateY(-20px); }
-        }
-
-        .alert.hiding {
-            animation: slideUpFade 0.5s ease forwards;
-        }
-        
-        .alert-success { 
-            background: rgba(40, 167, 69, 0.2); 
-            color: var(--success-color); 
-            border: 2px solid var(--success-color); 
-        }
-        
-        .alert-error { 
-            background: rgba(220, 53, 69, 0.2); 
-            color: var(--danger-color); 
-            border: 2px solid var(--danger-color); 
-        }
-
-        /* Toggle Button Styles */
-        .theme-toggle-btn {
+        /* モダンな丸いアイコンボタン */
+        .modern-btn {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             color: var(--text-color);
+            border-radius: 50%; /* 完全な円 */
+            width: 44px;
+            height: 44px;
+            padding: 0;
             cursor: pointer;
-            padding: 8px;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 心地よいバウンス */
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
             box-shadow: 0 2px 5px var(--shadow-color);
-            z-index: 9999;
-        }
-        .theme-toggle-btn:hover {
-            transform: scale(1.05);
-            background: var(--hover-bg);
-        }
-        .theme-toggle-btn svg {
-            width: 20px;
-            height: 20px;
-            fill: currentColor;
+            text-decoration: none;
+            position: relative; /* ツールチップの基準点 */
+            flex-shrink: 0;
+            /* タップ時のハイライトを無効化（アプリっぽくする） */
+            -webkit-tap-highlight-color: transparent;
         }
 
+        .modern-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke-width: 2;
+            fill: none;
+            stroke: currentColor;
+        }
+
+        /* ホバー時の浮き出しエフェクト */
+        .modern-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            background: var(--card-bg); /* 背景を確実に維持 */
+            z-index: 10; /* 重なり順を上げる */
+        }
+        
+        .modern-btn:active {
+            transform: translateY(-1px) scale(0.98);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* アクティブ状態（トグルボタンONなど） */
+        .modern-btn.active {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+        
+        .modern-btn.active:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        /* ツールチップ（黒い吹き出し） */
+        .tooltip-container[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%; /* ボタンの上に表示 */
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            background: rgba(20, 20, 20, 0.9);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 0;
+            animation: tooltipFadeIn 0.2s forwards;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            font-family: sans-serif;
+        }
+
+        /* 吹き出しの小さな三角 */
+        .tooltip-container[data-tooltip]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-2px);
+            border: 5px solid transparent;
+            border-top-color: rgba(20, 20, 20, 0.9);
+            opacity: 0;
+            animation: tooltipFadeIn 0.2s forwards;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        @keyframes tooltipFadeIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(0); }
+            to { opacity: 1; transform: translateX(-50%) translateY(-8px); }
+        }
+
+        /* アラートスタイル (既存維持) */
+        .alert { 
+            padding: 24px 20px; margin: 20px auto; max-width: 90%; width: 100%;
+            border-radius: 12px; font-size: 18px; font-weight: 600; text-align: center;
+            animation: slideDown 0.3s ease-out; box-shadow: 0 4px 12px var(--shadow-color);
+        }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUpFade { to { opacity: 0; transform: translateY(-20px); } }
+        .alert.hiding { animation: slideUpFade 0.5s ease forwards; }
+        .alert-success { background: rgba(40, 167, 69, 0.2); color: var(--success-color); border: 2px solid var(--success-color); }
+        .alert-error { background: rgba(220, 53, 69, 0.2); color: var(--danger-color); border: 2px solid var(--danger-color); }
+        
         @media (min-width: 768px) {
-            .alert {
-                max-width: 600px;
-                padding: 28px 24px;
-                font-size: 20px;
-            }
+            .alert { max-width: 600px; padding: 28px 24px; font-size: 20px; }
         }
     </style>
     {% block extra_styles %}{% endblock %}
@@ -165,37 +231,30 @@
     <!-- Theme Toggle & Alert Logic -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 1. Alert Auto-dismiss Logic
+            // Alert Auto-dismiss
             const successAlerts = document.querySelectorAll('.alert-success');
             if (successAlerts.length > 0) {
                 setTimeout(() => {
                     successAlerts.forEach(alert => {
                         alert.classList.add('hiding');
-                        alert.addEventListener('animationend', () => {
-                            alert.remove();
-                        });
+                        alert.addEventListener('animationend', () => { alert.remove(); });
                     });
                 }, 2000);
             }
 
-            // 2. Theme Toggle Logic
+            // Theme Toggle Logic
             const currentTheme = document.documentElement.getAttribute('data-theme');
             
-            // Create Toggle Button
+            // Create Toggle Button using NEW STYLES
             const btn = document.createElement('button');
-            btn.className = 'theme-toggle-btn';
-            btn.setAttribute('aria-label', 'Toggle Dark Mode');
+            btn.className = 'modern-btn tooltip-container'; // 新しいクラスを適用
+            btn.setAttribute('data-tooltip', 'テーマ切替');   // ツールチップ設定
             
-            // Icons
-            const sunIcon = `<svg viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>`;
-            const moonIcon = `<svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-3.03 0-5.5-2.47-5.5-5.5 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>`;
+            const sunIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+            const moonIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
             
             function updateIcon(theme) {
-                if (theme === 'dark') {
-                    btn.innerHTML = moonIcon;
-                } else {
-                    btn.innerHTML = sunIcon;
-                }
+                btn.innerHTML = (theme === 'dark') ? moonIcon : sunIcon;
             }
             updateIcon(currentTheme);
             
@@ -207,44 +266,17 @@
                 updateIcon(newTheme);
             };
 
-            // Intelligent Injection Logic to avoid layout overlap
-            const headerBar = document.querySelector('.header-bar'); // Dashboard header
-            const manageHeader = document.querySelector('.header'); // Manage/Edit Assets header
-            
-            if (headerBar) {
-                // Dashboard: Group with the last element (which should be the privacy button)
-                const lastChild = headerBar.lastElementChild;
-                if (lastChild) {
-                    const wrapper = document.createElement('div');
-                    wrapper.style.display = 'flex';
-                    wrapper.style.alignItems = 'center';
-                    wrapper.style.gap = '12px';
-                    
-                    headerBar.replaceChild(wrapper, lastChild);
-                    
-                    // ✅ 修正: 目のアイコン(lastChild)の後にテーマボタン(btn)を配置
-                    // [目のアイコン] [テーマ切り替え]
-                    wrapper.appendChild(lastChild);
-                    wrapper.appendChild(btn);
-                } else {
-                    headerBar.appendChild(btn);
-                }
-            } else if (manageHeader) {
-                // Manage Assets: Absolute position inside relative header
-                // Ensure header has relative positioning
-                const style = window.getComputedStyle(manageHeader);
-                if (style.position === 'static') {
-                    manageHeader.style.position = 'relative';
-                }
-                btn.style.position = 'absolute';
-                btn.style.top = '20px';
-                btn.style.right = '20px';
-                manageHeader.appendChild(btn);
+            // Injection Logic (既存と同じ場所へ)
+            const themeContainer = document.getElementById('theme-toggle-container');
+            if (themeContainer) {
+                // Dashboard: 指定されたコンテナに入れる
+                themeContainer.appendChild(btn);
             } else {
-                // Fallback (Login, Register): Fixed top-right
+                // Fallback (Login/Register etc)
                 btn.style.position = 'fixed';
                 btn.style.top = '16px';
                 btn.style.right = '16px';
+                btn.style.zIndex = '9999';
                 document.body.appendChild(btn);
             }
         });

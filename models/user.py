@@ -221,7 +221,8 @@ class UserService:
                         (username, password_hash)
                     )
                     result = c.fetchone()
-                    new_user_id = result[0] if result else None
+                    # 【修正】RealDictCursor対応: 辞書キー 'id' でアクセス
+                    new_user_id = result['id'] if result else None
                 else:
                     c.execute(
                         'INSERT INTO users (username, password_hash) VALUES (?, ?)',
