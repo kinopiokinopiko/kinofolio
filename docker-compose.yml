@@ -32,10 +32,31 @@ services:
     networks:
       - default
 
+  # --- ↓↓↓ 復活させたCaddy（ここが重要） ↓↓↓ ---
+  caddy:
+    image: caddy:2
+    container_name: portfolio-caddy
+    restart: always
+    ports:
+      - "80:80"    # インターネットの入り口
+      - "443:443"  # SSL(鍵)付きの入り口
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile  # 設定ファイルを読み込む
+      - caddy_data:/data                  # 鍵データを保存する場所
+      - caddy_config:/config
+    depends_on:
+      - web
+    networks:
+      - default
+      - app-network
+
 volumes:
   postgres_data:
     external: true
     name: myapp_postgres_data
+  # ↓これらも追加（Caddy用）
+  caddy_data:
+  caddy_config:
 
 networks:
   app-network:
