@@ -22,6 +22,3 @@ COPY . .
 # ポートは5000番で待ち受けます
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--threads", "4", "app:app"]
 
-a-asset-management.duckdns.org {
-    # Dockerコンテナの中から、ホスト(Ubuntu)の5001番を呼ぶためのIPアドレス
-    reverse_proxy 172.17.0.1:5001}
