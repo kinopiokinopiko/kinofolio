@@ -3,10 +3,10 @@ version: '3.8'
 services:
   web:
     build: .
+    container_name: apps-kinofolio-web  # Caddyがここを見に来ます
     restart: always
     expose:
-      - "5000"
-    container_name: apps-kinofolio-web  # Caddyが見つけやすいように名前をつける
+      - "5000"  # Caddy向けにポート5000をネットワーク内でのみ公開
     environment:
       - FLASK_ENV=production
       - DATABASE_URL=postgresql://user:password@db:5432/portfolio_db
@@ -18,7 +18,7 @@ services:
       - db
     networks:
       - default
-      - app-network  # 管理入室とつながる回線
+      - web-net  # 共通回線に参加
 
   db:
     image: postgres:17
@@ -32,32 +32,11 @@ services:
     networks:
       - default
 
-  # --- ↓↓↓ 復活させたCaddy（ここが重要） ↓↓↓ ---
-  caddy:
-    image: caddy:2
-    container_name: portfolio-caddy
-    restart: always
-    ports:
-      - "80:80"    # インターネットの入り口
-      - "443:443"  # SSL(鍵)付きの入り口
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile  # 設定ファイルを読み込む
-      - caddy_data:/data                  # 鍵データを保存する場所
-      - caddy_config:/config
-    depends_on:
-      - web
-    networks:
-      - default
-      - app-network
-
 volumes:
   postgres_data:
     external: true
     name: myapp_postgres_data
-  # ↓これらも追加（Caddy用）
-  caddy_data:
-  caddy_config:
 
 networks:
-  app-network:
+  web-net:
     external: true
