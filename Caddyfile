@@ -1,3 +1,11 @@
 kinofolio.duckdns.org {
     reverse_proxy web:5000
 }
+
+a-asset-management.duckdns.org
+{
+    # 新しいアプリはポート5001で動いている
+    # Caddyから見ると "host.docker.internal" またはサーバーのIP指定が必要だが
+    # ここでは一番確実な方法として「ホストのIP:5001」へ飛ばす設定にします
+    reverse_proxy 172.17.0.1:5001
+}
